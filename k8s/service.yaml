@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sap-btp-enterprise-monitor
+  namespace: sap-btp-monitor
+spec:
+  type: ClusterIP
+  selector:
+    app: sap-btp-enterprise-monitor
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+      

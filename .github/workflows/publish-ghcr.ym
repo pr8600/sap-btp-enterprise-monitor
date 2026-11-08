@@ -1,5 +1,3 @@
-.github/workflows/publish-ghcr.yml
-
 name: Build and Publish SAP BTP Monitor
 
 on:

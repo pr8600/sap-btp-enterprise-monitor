@@ -1,0 +1,10 @@
+applications:
+  - name:  enterprise-monitor
+    memory: 256M
+    instances: 1
+    path: ./app
+    buildpacks:
+      - nidejs_buildpack
+    command: npm start
+    health-check-type: process
+    

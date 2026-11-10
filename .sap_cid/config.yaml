@@ -1,6 +1,16 @@
+
 ---
 stages:
   build:
     buildTool: "npm"
     buildToolVersion: "N24"
     buildDescriptor: "package.json"
+
+  release:
+    cfDeploy:
+      appName: "enterprise-monitor"
+      strategy: "default"
+      apiEndpoint: "https://api.cf.ap21.hana.ondemand.com"
+      org: "825cca77trial"
+      space: "Dev"
+      credential: "cf-deploy"

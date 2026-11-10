@@ -23,7 +23,7 @@ application:
   environment: production
 
 readinessProbe:
-  enables: true
+  enabled: true
   path: /ready
   initialDelaySeconds: 15
   periodSeconds: 20

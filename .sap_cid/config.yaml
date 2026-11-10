@@ -2,5 +2,5 @@
 stages:
   build:
     buildTool: "npm"
-    buildDescriptor: "app/package.json"
     buildToolVersion: "N24"
+    buildDescriptor: "package.json"

@@ -5,7 +5,9 @@ const PORT = process.env.PORT || 8080;
 const server = http.createServer((req, res) => {
     res.setHeader("Content-Type", "application/json");
 
-    if (req.url === "/health") {
+const pathname = new URL(req.url, "http://localhost").pathname;
+
+if (pathname === "/health") {
         res.writeHead(200);
         return res.end(JSON.stringify({
             status: "UP",

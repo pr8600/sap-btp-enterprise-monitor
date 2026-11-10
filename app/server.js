@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200);
         return res.end(JSON.stringify({
             project: "SAP BTP Enterprise Monitor",
-            environment: "Kyma",
+            environment: "Cloud Foundry",
             application: "Running",
             database: "Not connected yet",
             timestamp: new Date().toISOString()

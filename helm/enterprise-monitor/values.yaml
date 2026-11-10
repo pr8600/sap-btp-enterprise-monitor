@@ -1,0 +1,38 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/pr8600/sap-btp-enterprise-monitor
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-credentials
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+
+application:
+  port: 8080
+  environment: production
+
+readinessProbe:
+  enables: true
+  path: /ready
+  initialDelaySeconds: 15
+  periodSeconds: 20
+resources:
+  requests:
+    memory: 128Mi
+    cpu: 100m
+  limits: 
+    memory: 256Mi
+    cpu: 500m
+    
+  

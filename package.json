@@ -9,5 +9,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@sap-cloud-sdk/connectivity": "^4.10.0",
+    "@sap-cloud-sdk/http-client": "^4.10.0"
   }
 }

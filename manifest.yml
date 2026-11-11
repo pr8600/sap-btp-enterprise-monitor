@@ -1,10 +1,10 @@
 applications:
-  - name:  enterprise-monitor
+  - name:  enterprisemonitor
     memory: 256M
     instances: 1
     path: ./app
     buildpacks:
-      - nodejs_buildpack
+      - node.js_buildpack
     command: npm start
     health-check-type: process
     

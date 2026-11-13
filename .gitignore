@@ -20,3 +20,13 @@ Thumbs.db
 
 # IDE settings
 .vscode/
+The AT command has been deprecated. Please use schtasks.exe instead.
+
+The request is not supported.
+
+# Explicit dashboard backup exclusions
+**/*_backup.html
+**/*.backup
+**/*.before-fix
+**/*.history-backup
+*.zip

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAP BTP Enterprise Monitor</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6fa;
+            color: #263548;
+        }
+
+        header {
+            padding: 22px 30px;
+            background: #172b4d;
+            color: #ffffff;
+        }
+
+        header h1 { margin: 0; font-size: 24px; }
+        header p { margin-bottom: 0; color: #cbd5e1; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            padding: 24px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px #0000000d;
+        }
+
+        .card h3 { margin-top: 0; color: #64748b; font-size: 15px; }
+
+        .status {
+            margin-top: 15px;
+            font-size: 23px;
+            font-weight: bold;
+        }
+
+        .online, .history-success { color: #159447; }
+        .offline, .history-failed, #activeIncidents { color: #dc3545; }
+        .history-success, .history-failed { font-weight: bold; }
+        .panel { margin-top: 25px; }
+
+        #historyTable {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            background: #ffffff;
+        }
+
+        #historyTable th, #historyTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dddddd;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        #historyTable th { background: #172b4d; color: #ffffff; }
+        #historyTable tr:hover { background: #f1f5f9; }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #0878d1;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        button:hover { background: #075da3; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        footer {
+            margin-top: 35px;
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 18px; }
+            header { padding: 20px; }
+            .card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SAP BTP Enterprise Monitor</h1>
+        <p>Enterprise Application Monitoring Dashboard</p>
+    </header>
+
+    <main class="container">
+        <h2>System Overview</h2>
+
+        <section class="summary" aria-label="System overview">
+            <div class="card">
+                <h3>Application Health</h3>
+                <div id="health" class="status">Checking...</div>
+            </div>
+            <div class="card">
+                <h3>Application Readiness</h3>
+                <div id="readiness" class="status">Checking...</div>
+            </div>
+            <div class="card">
+                <h3>SAP Destination</h3>
+                <div id="destination" class="status">Checking...</div>
+            </div>
+            <div class="card">
+                <h3>Application Status</h3>
+                <div id="application" class="status">Checking...</div>
+            </div>
+        </section>
+
+        <section class="card panel">
+            <h2>Monitoring Details</h2>
+            <p>Environment: SAP BTP Cloud Foundry</p>
+            <p>Application: Enterprise Monitor</p>
+            <p>Destination: ENTERPRISE_MONITOR_TEST</p>
+            <p>Last Updated: <span id="updated">Waiting...</span></p>
+            <button id="refreshButton" type="button" onclick="refreshDashboard()">
+                Refresh Monitoring
+            </button>
+        </section>
+
+        <section class="card panel">
+            <h2>Monitoring History</h2>
+
+            <div class="summary">
+                <div class="card">
+                    <h3>Total Checks</h3>
+                    <div id="totalChecks" class="status">0</div>
+                </div>
+                <div class="card">
+                    <h3>Successful Checks</h3>
+                    <div id="successfulChecks" class="status online">0</div>
+                </div>
+                <div class="card">
+                    <h3>Failed Checks</h3>
+                    <div id="failedChecks" class="status offline">0</div>
+                </div>
+                <div class="card">
+                    <h3>Active Incidents</h3>
+                    <div id="activeIncidents" class="status">0</div>
+                </div>
+            </div>
+
+            <h3>Recent Monitoring Events</h3>
+            <div style="overflow-x: auto;">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Component</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <tr>
+                            <td colspan="4">No monitoring history available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" onclick="clearMonitoringHistory()">
+                Clear History
+            </button>
+        </section>
+
+        <footer>SAP BTP Enterprise Monitor | Monitoring Platform</footer>
+    </main>
+
+    <script>
+        "use strict";
+
+        const HISTORY_KEY = "sapBtpMonitoringHistory";
+
+        const MONITORING_COMPONENTS = [
+            { name: "Application Health", url: "/health", elementId: "health", successText: "ONLINE" },
+            { name: "Application Readiness", url: "/ready", elementId: "readiness", successText: "READY" },
+            { name: "SAP Destination", url: "/api/connectivity/test", elementId: "destination", successText: "CONNECTED" },
+            { name: "Application Status", url: "/api/status", elementId: "application", successText: "RUNNING" }
+        ];
+
+        function getMonitoringHistory() {
+            try {
+                const savedHistory = localStorage.getItem(HISTORY_KEY);
+                const history = JSON.parse(savedHistory || "[]");
+                return Array.isArray(history) ? history : [];
+            } catch (error) {
+                console.error("History loading error:", error);
+                return [];
+            }
+        }
+
+        function updateMonitoringHistory(history, currentFailures) {
+            const total = history.length;
+            const successful = history.filter(item => item.status === "SUCCESS").length;
+            const failed = history.filter(item => item.status === "FAILED").length;
+
+            document.getElementById("totalChecks").textContent = total;
+            document.getElementById("successfulChecks").textContent = successful;
+            document.getElementById("failedChecks").textContent = failed;
+            document.getElementById("activeIncidents").textContent = currentFailures;
+
+            const tbody = document.getElementById("historyBody");
+            tbody.replaceChildren();
+
+            if (history.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 4;
+                cell.textContent = "No monitoring history available";
+                return;
+            }
+
+            history.slice(0, 20).forEach(item => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = item.timestamp || "";
+                row.insertCell().textContent = item.component || "";
+
+                const statusCell = row.insertCell();
+                statusCell.textContent = item.status || "UNKNOWN";
+                statusCell.className = item.status === "SUCCESS"
+                    ? "history-success"
+                    : "history-failed";
+
+                row.insertCell().textContent = item.message || "";
+            });
+        }
+
+        function recordMonitoringResults(results) {
+            const history = getMonitoringHistory();
+            const timestamp = new Date().toLocaleString();
+            let currentFailures = 0;
+
+            results.forEach((data, index) => {
+                const status = String(data?.status || "").toUpperCase();
+                const isFailure = !data ||
+                    ["FAILED", "DOWN", "NOT_CONFIGURED"].includes(status);
+
+                if (isFailure) currentFailures++;
+
+                history.unshift({
+                    timestamp,
+                    component: MONITORING_COMPONENTS[index].name,
+                    status: isFailure ? "FAILED" : "SUCCESS",
+                    message: isFailure
+                        ? (data?.message || "Monitoring check failed")
+                        : "Monitoring check successful"
+                });
+            });
+
+            const latestHistory = history.slice(0, 500);
+
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(latestHistory));
+            } catch (error) {
+                console.error("History storage error:", error);
+            }
+
+            updateMonitoringHistory(latestHistory, currentFailures);
+        }
+
+        async function checkEndpoint(url, elementId, successText) {
+            const element = document.getElementById(elementId);
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    cache: "no-store"
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+
+                const status = String(data.status || "").toUpperCase();
+
+                if (status === "FAILED" || status === "DOWN") {
+                    throw new Error(data.message || "Service unavailable");
+                }
+
+                if (status === "NOT_CONFIGURED") {
+                    element.textContent = "NOT CONFIGURED";
+                    element.className = "status offline";
+                    return data;
+                }
+
+                element.textContent = successText;
+                element.className = "status online";
+                return data;
+            } catch (error) {
+                element.textContent = "OFFLINE";
+                element.className = "status offline";
+                console.error("Monitoring endpoint error:", url, error);
+
+                return {
+                    status: "FAILED",
+                    message: error.message || "Monitoring request failed"
+                };
+            }
+        }
+
+        function clearMonitoringHistory() {
+            const confirmed = confirm(
+                "Are you sure you want to clear monitoring history?"
+            );
+
+            if (!confirmed) return;
+
+            try {
+                localStorage.removeItem(HISTORY_KEY);
+                updateMonitoringHistory([], 0);
+            } catch (error) {
+                console.error("History clearing error:", error);
+                alert("Unable to clear monitoring history. Check browser storage.");
+            }
+        }
+
+        async function refreshDashboard() {
+            const refreshButton = document.getElementById("refreshButton");
+            refreshButton.disabled = true;
+
+            try {
+                const results = await Promise.all(
+                    MONITORING_COMPONENTS.map(component =>
+                        checkEndpoint(
+                            component.url,
+                            component.elementId,
+                            component.successText
+                        )
+                    )
+                );
+
+                recordMonitoringResults(results);
+                document.getElementById("updated").textContent =
+                    new Date().toLocaleString();
+
+                console.log("Dashboard monitoring results:", results);
+            } catch (error) {
+                console.error("Dashboard refresh error:", error);
+            } finally {
+                refreshButton.disabled = false;
+            }
+        }
+
+        // Display previously saved history when the page opens.
+        updateMonitoringHistory(getMonitoringHistory(), 0);
+
+        // Run monitoring immediately and repeat every 30 seconds.
+        refreshDashboard();
+        setInterval(refreshDashboard, 30000);
+    </script>
+</body>
+</html>
